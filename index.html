@@ -953,7 +953,7 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
             }
         }
 
-        async function findRandomStreetViewLocation() {
+       async function findRandomStreetViewLocation() {
     // Per ora, per testare, lavoreremo solo con l'Italia.
     const countryCode = 'IT'; 
     const countryName = 'Italy';
@@ -970,18 +970,18 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         const countryGeoJSON = await response.json();
         console.log("Confini caricati. Inizio ricerca punto valido...");
 
-        // --- ALGORITMO CORRETTO: REJECTION SAMPLING ---
+        // --- ALGORITMO CORRETTO (CON LA CORREZIONE FINALE) ---
         let randomLatLng;
         let pointFound = false;
-        const bbox = turf.bbox(countryGeoJSON); // Calcoliamo il rettangolo di contorno una sola volta
+        // Estraiamo la forma geometrica dalla "scatola" GeoJSON. 
+        // Questo è il pezzo che mancava.
+        const countryPolygon = countryGeoJSON.features[0]; 
+        const bbox = turf.bbox(countryPolygon); // Calcoliamo il rettangolo di contorno
 
-        // Cicliamo finché non troviamo un punto valido dentro il poligono
         while (!pointFound) {
-            // Generiamo un punto a caso nel rettangolo
             const randomPtArray = turf.randomPosition(bbox); 
-            // Controlliamo se il punto è DENTRO la forma reale dell'Italia
-            if (turf.booleanPointInPolygon(randomPtArray, countryGeoJSON)) {
-                // Trovato! Lo salviamo e usciamo dal ciclo.
+            // Usiamo countryPolygon, non l'intero countryGeoJSON
+            if (turf.booleanPointInPolygon(randomPtArray, countryPolygon)) {
                 randomLatLng = new google.maps.LatLng(randomPtArray[1], randomPtArray[0]);
                 pointFound = true;
             }
@@ -991,11 +991,11 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
 
         let panoramaFound = false;
         let attempt = 0;
-        while(!panoramaFound && attempt < 5) { // Proviamo 5 volte vicino al nostro punto perfetto
+        while(!panoramaFound && attempt < 5) {
              console.log(`Ricerca Street View, tentativo ${attempt + 1}...`);
              const { data } = await streetViewService.getPanorama({
                 location: randomLatLng,
-                radius: 50000 + (attempt * 50000), // Aumentiamo il raggio ad ogni tentativo
+                radius: 50000 + (attempt * 50000),
                 source: 'outdoor'
              });
 
