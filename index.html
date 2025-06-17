@@ -963,46 +963,53 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
     document.getElementById('loading-overlay').style.display = 'flex';
 
     try {
-        // Usiamo fetch per scaricare il nostro file JSON dal cloud
         const response = await fetch(boundariesUrl);
         if (!response.ok) {
             throw new Error('Errore di rete o file non trovato su Google Cloud.');
         }
         const countryGeoJSON = await response.json();
-        console.log("Confini caricati con successo.");
+        console.log("Confini caricati. Inizio ricerca punto valido...");
+
+        // --- ALGORITMO CORRETTO: REJECTION SAMPLING ---
+        let randomLatLng;
+        let pointFound = false;
+        const bbox = turf.bbox(countryGeoJSON); // Calcoliamo il rettangolo di contorno una sola volta
+
+        // Cicliamo finché non troviamo un punto valido dentro il poligono
+        while (!pointFound) {
+            // Generiamo un punto a caso nel rettangolo
+            const randomPtArray = turf.randomPosition(bbox); 
+            // Controlliamo se il punto è DENTRO la forma reale dell'Italia
+            if (turf.booleanPointInPolygon(randomPtArray, countryGeoJSON)) {
+                // Trovato! Lo salviamo e usciamo dal ciclo.
+                randomLatLng = new google.maps.LatLng(randomPtArray[1], randomPtArray[0]);
+                pointFound = true;
+            }
+        }
+        console.log("Punto valido trovato all'interno dei confini!");
+        // --- FINE ALGORITMO ---
 
         let panoramaFound = false;
         let attempt = 0;
-
-        // Continuiamo a provare a trovare un panorama, con un limite di sicurezza
-        while (!panoramaFound && attempt < 200) { 
-            attempt++;
-
-            // Usiamo la magia di Turf.js per generare un punto casuale DENTRO i confini reali
-            const randomPoint = turf.randomPoint(countryGeoJSON);
-            const coords = randomPoint.geometry.coordinates;
-            const randomLatLng = new google.maps.LatLng(coords[1], coords[0]); // Google usa Lat,Lng
-
-            console.log(`Tentativo ${attempt}: Punto generato. Ricerca di Street View...`);
-            const { data } = await streetViewService.getPanorama({
+        while(!panoramaFound && attempt < 5) { // Proviamo 5 volte vicino al nostro punto perfetto
+             console.log(`Ricerca Street View, tentativo ${attempt + 1}...`);
+             const { data } = await streetViewService.getPanorama({
                 location: randomLatLng,
-                radius: 50000, // Cerchiamo in un raggio di 50km attorno al nostro punto perfetto
+                radius: 50000 + (attempt * 50000), // Aumentiamo il raggio ad ogni tentativo
                 source: 'outdoor'
-            });
+             });
 
-            if (data?.location?.pano) {
+             if (data?.location?.pano) {
                 console.log("Panorama di Street View trovato!");
-                // Abbiamo trovato! Usiamo la funzione di supporto per finalizzare il round.
                 await setupAndFinalizeRound(data, { name: countryName, code: countryCode }, null);
-                panoramaFound = true; // Impostiamo a true per fermare il ciclo
+                panoramaFound = true;
                 return; 
-            }
+             }
+             attempt++;
         }
 
-        if(!panoramaFound) {
-            console.error("Impossibile trovare uno Street View in Italia dopo 200 tentativi. Riavvio il round.");
-            startNewRound();
-        }
+        console.error("Impossibile trovare uno Street View vicino al punto generato. Riavvio.");
+        startNewRound();
 
     } catch (error) {
         console.error("Impossibile caricare o processare i dati dei confini:", error);
