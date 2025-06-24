@@ -953,67 +953,92 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
             }
         }
 
-       async function findRandomStreetViewLocation() {
-    // Per ora, per testare, lavoreremo solo con l'Italia.
-    const countryCode = 'IT'; 
-    const countryName = 'Italy';
-    const boundariesUrl = 'https://storage.googleapis.com/geo-detective-data-tuonome-123/IT.json';
+      async function findRandomStreetViewLocation() {
+    // 1. SCEGLI UN PAESE A CASO DALLA NOSTRA LISTA GLOBALE
+    // Filtriamo prima i paesi in base alla modalità di gioco attiva!
+    let countriesToSearch;
+    if (activeGameMode === 'World') {
+        countriesToSearch = STREET_VIEW_COUNTRIES;
+    } else {
+        countriesToSearch = STREET_VIEW_COUNTRIES.filter(c => c.continent === activeGameMode);
+    }
 
-    console.log(`Fase 1: Recupero dei confini per ${countryName} dal cloud...`);
+    if (!countriesToSearch || countriesToSearch.length === 0) {
+        alert("Nessun paese disponibile per la modalità di gioco selezionata!");
+        document.getElementById('loading-overlay').style.display = 'none';
+        return;
+    }
+
+    const randomCountry = countriesToSearch[Math.floor(Math.random() * countriesToSearch.length)];
+
+    const countryCode = randomCountry.code;
+    const countryName = randomCountry.name;
+
+    // 2. COSTRUISCI L'URL DINAMICO PER QUEL PAESE
+    const bucketBaseUrl = 'https://storage.googleapis.com/geo-detective-data-tuonome-123'; // <-- Assicurati che il nome del bucket sia corretto!
+    const boundariesUrl = `<span class="math-inline">\{bucketBaseUrl\}/</span>{countryCode}.json`;
+
+    console.log(`Paese scelto: ${countryName}. Recupero confini da: ${boundariesUrl}`);
     document.getElementById('loading-overlay').style.display = 'flex';
 
     try {
+        // 3. SCARICA IL FILE CORRETTO
         const response = await fetch(boundariesUrl);
         if (!response.ok) {
-            throw new Error('Errore di rete o file non trovato su Google Cloud.');
+            throw new Error(`File non trovato per <span class="math-inline">\{countryName\} \(</span>{countryCode}.json). Riprovo con un altro paese.`);
         }
         const countryGeoJSON = await response.json();
         console.log("Confini caricati. Inizio ricerca punto valido...");
 
-        // --- ALGORITMO CORRETTO (CON LA CORREZIONE FINALE) ---
+        // 4. TROVA UN PUNTO VALIDO (logica che già funziona)
         let randomLatLng;
         let pointFound = false;
-        // Estraiamo la forma geometrica dalla "scatola" GeoJSON. 
-        // Questo è il pezzo che mancava.
-        const countryPolygon = countryGeoJSON.features[0]; 
-        const bbox = turf.bbox(countryPolygon); // Calcoliamo il rettangolo di contorno
+        const countryFeature = countryGeoJSON.features[0];
+        const bbox = turf.bbox(countryFeature.geometry);
 
-        while (!pointFound) {
+        let findPointAttempts = 0;
+        while (!pointFound && findPointAttempts < 500) {
             const randomPtArray = turf.randomPosition(bbox); 
-            // Usiamo countryPolygon, non l'intero countryGeoJSON
-            if (turf.booleanPointInPolygon(randomPtArray, countryPolygon)) {
+            if (turf.booleanPointInPolygon(randomPtArray, countryFeature.geometry)) {
                 randomLatLng = new google.maps.LatLng(randomPtArray[1], randomPtArray[0]);
                 pointFound = true;
             }
+            findPointAttempts++;
+        }
+
+        if (!pointFound) {
+            throw new Error(`Impossibile trovare un punto valido nei confini di ${countryName} dopo 500 tentativi.`);
         }
         console.log("Punto valido trovato all'interno dei confini!");
-        // --- FINE ALGORITMO ---
 
+        // 5. TROVA UNO STREET VIEW (logica che già funziona)
         let panoramaFound = false;
-        let attempt = 0;
-        while(!panoramaFound && attempt < 5) {
-             console.log(`Ricerca Street View, tentativo ${attempt + 1}...`);
+        let panoramaAttempt = 0;
+        while(!panoramaFound && panoramaAttempt < 5) {
+             console.log(`Ricerca Street View per ${countryName}, tentativo ${panoramaAttempt + 1}...`);
              const { data } = await streetViewService.getPanorama({
                 location: randomLatLng,
-                radius: 50000 + (attempt * 50000),
+                radius: 50000 + (panoramaAttempt * 50000),
                 source: 'outdoor'
              });
 
              if (data?.location?.pano) {
-                console.log("Panorama di Street View trovato!");
-                await setupAndFinalizeRound(data, { name: countryName, code: countryCode }, null);
+                console.log("Panorama trovato!");
+                // Ora passiamo i dati corretti del paese che abbiamo scelto!
+                await setupAndFinalizeRound(data, randomCountry, null);
                 panoramaFound = true;
                 return; 
              }
-             attempt++;
+             panoramaAttempt++;
         }
 
-        console.error("Impossibile trovare uno Street View vicino al punto generato. Riavvio.");
+        console.error(`Nessun panorama trovato vicino al punto generato per ${countryName}. Riavvio.`);
         startNewRound();
 
     } catch (error) {
-        console.error("Impossibile caricare o processare i dati dei confini:", error);
-        alert("Errore critico: impossibile caricare i dati geografici. Riprova più tardi.");
+        console.error("ERRORE:", error.message);
+        // Se qualcosa va storto (es. file di un paese mancante), riavvia il round.
+        startNewRound();
     }
 }
 
