@@ -954,7 +954,6 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         }
 
      async function findRandomStreetViewLocation() {
-    // 1. SCEGLI UN PAESE A CASO DALLA NOSTRA LISTA GLOBALE
     let countriesToSearch;
     if (activeGameMode === 'World') {
         countriesToSearch = STREET_VIEW_COUNTRIES;
@@ -964,16 +963,13 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
 
     if (!countriesToSearch || countriesToSearch.length === 0) {
         alert("Nessun paese disponibile per la modalità di gioco selezionata!");
-        document.getElementById('loading-overlay').style.display = 'none';
         return;
     }
 
     const randomCountry = countriesToSearch[Math.floor(Math.random() * countriesToSearch.length)];
-
     const countryCode = randomCountry.code;
     const countryName = randomCountry.name;
 
-    // 2. COSTRUISCI L'URL DINAMICO PER QUEL PAESE
     const bucketBaseUrl = 'https://storage.googleapis.com/geo-detective-data-tuonome-123';
     const boundariesUrl = `<span class="math-inline">\{bucketBaseUrl\}/</span>{countryCode}.json`;
 
@@ -981,40 +977,43 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
     document.getElementById('loading-overlay').style.display = 'flex';
 
     try {
-        // 3. SCARICA IL FILE CORRETTO
         const response = await fetch(boundariesUrl);
         if (!response.ok) {
-            throw new Error(`File non trovato per <span class="math-inline">\{countryName\} \(</span>{countryCode}.json). Riprovo con un altro paese.`);
+            throw new Error(`File non trovato per <span class="math-inline">\{countryName\} \(</span>{countryCode}.json).`);
         }
         const countryGeoJSON = await response.json();
-        console.log("Confini caricati. Inizio ricerca punto valido...");
 
-        // 4. TROVA UN PUNTO VALIDO (logica che già funziona)
+        // --- INIZIO CONTROLLI DI SICUREZZA SUI DATI ---
+        if (!countryGeoJSON || !countryGeoJSON.features || countryGeoJSON.features.length === 0) {
+            throw new Error(`Dati GeoJSON non validi o vuoti per ${countryName}.`);
+        }
+        const countryFeature = countryGeoJSON.features[0];
+        if (!countryFeature || !countryFeature.geometry || !countryFeature.geometry.coordinates) {
+             throw new Error(`La geometria per ${countryName} non è valida o è mancante.`);
+        }
+        // --- FINE CONTROLLI DI SICUREZZA ---
+
+        console.log("Confini caricati e validati. Inizio ricerca punto valido...");
+
         let randomLatLng;
         let pointFound = false;
-        const countryFeature = countryGeoJSON.features[0];
-
-        // --- ECCO LE CORREZIONI ---
-        const bbox = turf.bbox(countryFeature.geometry); // Aggiunto .geometry
+        const bbox = turf.bbox(countryFeature.geometry);
 
         let findPointAttempts = 0;
         while (!pointFound && findPointAttempts < 500) {
             const randomPtArray = turf.randomPosition(bbox); 
-            // Aggiunto .geometry
             if (turf.booleanPointInPolygon(randomPtArray, countryFeature.geometry)) {
                 randomLatLng = new google.maps.LatLng(randomPtArray[1], randomPtArray[0]);
                 pointFound = true;
             }
             findPointAttempts++;
         }
-        // --- FINE CORREZIONI ---
 
         if (!pointFound) {
-            throw new Error(`Impossibile trovare un punto valido nei confini di ${countryName} dopo 500 tentativi.`);
+            throw new Error(`Impossibile trovare un punto valido nei confini di ${countryName} dopo ${findPointAttempts} tentativi.`);
         }
         console.log("Punto valido trovato all'interno dei confini!");
 
-        // 5. TROVA UNO STREET VIEW (logica che già funziona)
         let panoramaFound = false;
         let panoramaAttempt = 0;
         while(!panoramaFound && panoramaAttempt < 5) {
@@ -1034,11 +1033,12 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
              panoramaAttempt++;
         }
 
-        console.error(`Nessun panorama trovato vicino al punto generato per ${countryName}. Riavvio.`);
-        startNewRound();
+        throw new Error(`Nessun panorama trovato vicino al punto generato per ${countryName}.`);
 
     } catch (error) {
-        console.error("ERRORE:", error.message);
+        // Se un qualsiasi errore si verifica nel blocco try, lo registriamo
+        // e facciamo ripartire il round per scegliere un altro paese.
+        console.error("ERRORE GESTITO:", error.message, "Riprovo con un nuovo paese.");
         startNewRound();
     }
 }
