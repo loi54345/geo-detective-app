@@ -953,9 +953,8 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
             }
         }
 
-      async function findRandomStreetViewLocation() {
+     async function findRandomStreetViewLocation() {
     // 1. SCEGLI UN PAESE A CASO DALLA NOSTRA LISTA GLOBALE
-    // Filtriamo prima i paesi in base alla modalità di gioco attiva!
     let countriesToSearch;
     if (activeGameMode === 'World') {
         countriesToSearch = STREET_VIEW_COUNTRIES;
@@ -975,7 +974,7 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
     const countryName = randomCountry.name;
 
     // 2. COSTRUISCI L'URL DINAMICO PER QUEL PAESE
-    const bucketBaseUrl = 'https://storage.googleapis.com/geo-detective-data-tuonome-123'; // <-- Assicurati che il nome del bucket sia corretto!
+    const bucketBaseUrl = 'https://storage.googleapis.com/geo-detective-data-tuonome-123';
     const boundariesUrl = `<span class="math-inline">\{bucketBaseUrl\}/</span>{countryCode}.json`;
 
     console.log(`Paese scelto: ${countryName}. Recupero confini da: ${boundariesUrl}`);
@@ -994,17 +993,21 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         let randomLatLng;
         let pointFound = false;
         const countryFeature = countryGeoJSON.features[0];
-        const bbox = turf.bbox(countryFeature.geometry);
+
+        // --- ECCO LE CORREZIONI ---
+        const bbox = turf.bbox(countryFeature.geometry); // Aggiunto .geometry
 
         let findPointAttempts = 0;
         while (!pointFound && findPointAttempts < 500) {
             const randomPtArray = turf.randomPosition(bbox); 
+            // Aggiunto .geometry
             if (turf.booleanPointInPolygon(randomPtArray, countryFeature.geometry)) {
                 randomLatLng = new google.maps.LatLng(randomPtArray[1], randomPtArray[0]);
                 pointFound = true;
             }
             findPointAttempts++;
         }
+        // --- FINE CORREZIONI ---
 
         if (!pointFound) {
             throw new Error(`Impossibile trovare un punto valido nei confini di ${countryName} dopo 500 tentativi.`);
@@ -1024,7 +1027,6 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
 
              if (data?.location?.pano) {
                 console.log("Panorama trovato!");
-                // Ora passiamo i dati corretti del paese che abbiamo scelto!
                 await setupAndFinalizeRound(data, randomCountry, null);
                 panoramaFound = true;
                 return; 
@@ -1037,7 +1039,6 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
 
     } catch (error) {
         console.error("ERRORE:", error.message);
-        // Se qualcosa va storto (es. file di un paese mancante), riavvia il round.
         startNewRound();
     }
 }
