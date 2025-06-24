@@ -953,7 +953,7 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
             }
         }
 
-     async function findRandomStreetViewLocation() {
+    async function findRandomStreetViewLocation() {
     let countriesToSearch;
     if (activeGameMode === 'World') {
         countriesToSearch = STREET_VIEW_COUNTRIES;
@@ -983,15 +983,21 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         }
         const countryGeoJSON = await response.json();
 
-        // --- INIZIO CONTROLLI DI SICUREZZA SUI DATI ---
         if (!countryGeoJSON || !countryGeoJSON.features || countryGeoJSON.features.length === 0) {
             throw new Error(`Dati GeoJSON non validi o vuoti per ${countryName}.`);
         }
-        const countryFeature = countryGeoJSON.features[0];
-        if (!countryFeature || !countryFeature.geometry || !countryFeature.geometry.coordinates) {
-             throw new Error(`La geometria per ${countryName} non è valida o è mancante.`);
+
+        // --- ECCO LA MODIFICA FINALE E DECISIVA ---
+        // Invece di prendere features[0], cerchiamo la prima feature che sia un poligono.
+        const countryFeature = countryGeoJSON.features.find(f => 
+            f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon')
+        );
+
+        // Se, dopo aver cercato, non troviamo NESSUNA geometria poligonale, allora il file è inutilizzabile.
+        if (!countryFeature) {
+             throw new Error(`Nessuna geometria di tipo Polygon o MultiPolygon trovata per ${countryName}.`);
         }
-        // --- FINE CONTROLLI DI SICUREZZA ---
+        // --- FINE MODIFICA ---
 
         console.log("Confini caricati e validati. Inizio ricerca punto valido...");
 
@@ -1036,8 +1042,6 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         throw new Error(`Nessun panorama trovato vicino al punto generato per ${countryName}.`);
 
     } catch (error) {
-        // Se un qualsiasi errore si verifica nel blocco try, lo registriamo
-        // e facciamo ripartire il round per scegliere un altro paese.
         console.error("ERRORE GESTITO:", error.message, "Riprovo con un nuovo paese.");
         startNewRound();
     }
