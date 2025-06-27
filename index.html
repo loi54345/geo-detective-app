@@ -279,6 +279,7 @@
 </button>
 
     <div id="game-controls">
+       <div id="streak-counter" class="ui-btn hidden" style="cursor: default;">Serie: <span class="ml-2 font-bold">0</span></div>
         <button id="stats-btn" class="ui-btn">Statistics</button>
     </div>
    <div id="settings-modal" class="modal-backdrop z-[120] hidden">
@@ -298,7 +299,8 @@
                 <div id="game-mode-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <button class="game-mode-btn" data-mode="World">World</button>
                     <button class="game-mode-btn" data-mode="WeightedWorld">Weighted World</button>
-                     <button class="game-mode-btn" data-mode="Nemesis" title="Gioca solo nei tuoi 5 paesi peggiori!">Nemesis Training</button>
+                    <button class="game-mode-btn" data-mode="Nemesis" title="Gioca solo nei tuoi 5 paesi peggiori!">Nemesis Training</button>
+                    <button class="game-mode-btn" data-mode="CountryStreak">Country Streak</button>
                     <button class="game-mode-btn" data-mode="Europe">Europe</button>
                     <button class="game-mode-btn" data-mode="Asia">Asia</button>
                     <button class="game-mode-btn" data-mode="North America">N. America</button>
@@ -481,6 +483,14 @@
             </div>
         </div>
      </div>
+     <div id="game-over-modal" class="modal-backdrop hidden z-[130]">
+    <div class="modal-content">
+        <h2 class="text-3xl font-bold mb-2">Game Over!</h2>
+        <p class="text-lg mb-4">La tua serie si è interrotta.</p>
+        <p class="text-xl mb-6">Punteggio Finale: <strong id="final-streak" class="text-4xl text-indigo-600">0</strong></p>
+        <button id="play-again-streak-btn" class="ui-btn !bg-indigo-600 hover:!bg-indigo-700">Gioca Ancora</button>
+    </div>
+</div>
 
     <script>
       
@@ -796,6 +806,12 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         renderPerformanceMap(getGameStats(), newRegion);
      }
 });
+// Aggiungi alla fine della funzione setupEventListeners
+document.getElementById('play-again-streak-btn').addEventListener('click', () => {
+    document.getElementById('game-over-modal').classList.add('hidden');
+    gameState.currentStreak = 0; // Azzera la serie
+    startNewRound();
+});
 }
     
     function updateGameModeButtonsUI() {
@@ -977,32 +993,94 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
 
         // --- GAME LOGIC ---
         function startNewRound() {
-        document.getElementById('confirm-new-game-btn').classList.add('hidden'); // <-- AGGIUNGI QUESTA
-        gameState.roundActive = true;
-        document.getElementById('loading-overlay').style.display = 'flex';
-            roundActive = true;
-            document.getElementById('loading-overlay').style.display = 'flex';
-            document.getElementById('result-overlay').style.display = 'none';
-            mapContainer.classList.remove('fullscreen', 'enlarged');
-            
-            submitBtn.textContent = 'Submit Guess';
-            submitBtn.disabled = true;
+    // Mostra/nascondi il contatore della serie
+    const streakCounter = document.getElementById('streak-counter');
+    if (activeGameMode === 'CountryStreak') {
+        streakCounter.classList.remove('hidden');
+        streakCounter.querySelector('span').textContent = gameState.currentStreak;
+    } else {
+        streakCounter.classList.add('hidden');
+    }
 
-            map.setCenter({ lat: 20, lng: 0 });
-            map.setZoom(2);
+    document.getElementById('confirm-new-game-btn').classList.add('hidden');
+    document.getElementById('loading-overlay').style.display = 'flex';
+    document.getElementById('result-overlay').style.display = 'none';
+    mapContainer.classList.remove('fullscreen', 'enlarged');
 
-            if (guessMarker) guessMarker.setVisible(false);
-            if (actualMarker) actualMarker.setVisible(false);
-            if (guessLine) guessLine.setMap(null);
-            
-            panorama.setOptions({ 
-                linksControl: true, panControl: true, visible: false, 
-                pov: {heading: Math.random() * 360, pitch: 0}, 
-                zoom: 0 
-            });
+    submitBtn.textContent = 'Submit Guess';
+    submitBtn.disabled = true;
 
-            findRandomStreetViewLocation();
+    map.setCenter({ lat: 20, lng: 0 });
+    map.setZoom(2);
+
+    if (guessMarker) guessMarker.setVisible(false);
+    if (actualMarker) actualMarker.setVisible(false);
+    if (guessLine) guessLine.setMap(null);
+
+    panorama.setOptions({ 
+        linksControl: true, panControl: true, visible: false, 
+        pov: {heading: Math.random() * 360, pitch: 0}, 
+        zoom: 0 
+    });
+
+    findRandomStreetViewLocation();
+}
+
+async function submitGuess() {
+    if (!guessMarker.getPosition() || !gameState.roundActive) return;
+
+    gameState.roundActive = false;
+    submitBtn.disabled = true;
+
+    const guessedLocation = guessMarker.getPosition();
+    let guessedCountry = { name: 'Unknown', code: 'N/A' };
+    try {
+        const { results } = await geocoder.geocode({ location: guessedLocation });
+        const address = results.find(r => r.types.includes('country'));
+        if (address) {
+            const countryComponent = address.address_components.find(c => c.types.includes('country'));
+            if (countryComponent) {
+                guessedCountry = { name: normalizeCountryName(countryComponent.long_name), code: countryComponent.short_name };
+            }
         }
+    } catch (e) { console.error("Geocoding guess failed", e); }
+
+    const distance = google.maps.geometry.spherical.computeDistanceBetween(actualLocation, guessedLocation);
+    const isCountryCorrect = guessedCountry.code === actualCountryData.code;
+
+    const proximityBonus = 2500 * Math.exp(-distance / 2000000);
+    let score = isCountryCorrect ? 2500 + proximityBonus : proximityBonus * 0.8;
+    score = Math.round(score);
+    gameState.score = score; // Aggiorniamo lo score nel gameState
+
+    // --- Logica per COUNTRY STREAK ---
+    if (activeGameMode === 'CountryStreak') {
+        if (isCountryCorrect) {
+            gameState.currentStreak++;
+            showRoundResult(score, distance, isCountryCorrect, guessedCountry.name);
+            submitBtn.textContent = 'Next Round';
+            submitBtn.disabled = false;
+        } else {
+            showRoundResult(score, distance, isCountryCorrect, guessedCountry.name);
+            document.getElementById('final-streak').textContent = gameState.currentStreak;
+            document.getElementById('game-over-modal').classList.remove('hidden');
+            submitBtn.classList.add('hidden'); 
+        }
+    } else {
+        // Comportamento per tutte le altre modalità
+        showRoundResult(score, distance, isCountryCorrect, guessedCountry.name);
+        submitBtn.textContent = 'Next Round';
+        submitBtn.disabled = false;
+    }
+
+    saveGameStats({ score, distance: distance / 1000, actualCountry: actualCountryData, guessedCountry, timestamp: new Date().toISOString() });
+
+    if (isCountryCorrect && distance <= 5000) {
+         triggerCelebration(true);
+    } else if (isCountryCorrect && distance <= 200000) {
+         triggerCelebration(false);
+    }
+}
 
         function normalizeCountryName(name) {
             return countryNameMap[name] || name;
