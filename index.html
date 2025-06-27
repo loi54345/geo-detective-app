@@ -588,19 +588,26 @@
         };
 
         // --- GLOBAL VARIABLES ---
-        let panorama, map, geocoder, streetViewService, uiSounds = {};
-        let actualLocation = null;
-        let actualCountryData = { name: null, code: null, bounds: null };
-        let guessMarker = null;
-        let actualMarker = null;
-        let guessLine = null;
-        let roundActive = false;
-        let charts = {};
-        let currentSort = { column: 'name', order: 'asc' };
-        let isMuted = false;
-        let isGeoChartLibLoaded = false;
-        let activeGameMode = 'World';   // La modalità del gioco in corso
-        let tempSelectedMode = 'World'; // La modalità selezionata TEMPORANEAMENTE nelle impostazioni
+let panorama, map, geocoder, streetViewService, uiSounds = {};
+let actualLocation = null;
+let actualCountryData = { name: null, code: null, bounds: null };
+let guessMarker = null;
+let actualMarker = null;
+let guessLine = null;
+let charts = {};
+let currentSort = { column: 'name', order: 'asc' };
+let isMuted = false;
+let isGeoChartLibLoaded = false;
+let activeGameMode = 'World';
+let tempSelectedMode = 'World';
+
+// NUOVO OGGETTO PER LO STATO DEL GIOCO
+let gameState = {
+    roundActive: false,
+    currentStreak: 0,
+    distanceBudget: 15000, // Budget iniziale per la modalità Sfida a Distanza
+    score: 0
+};
 
         // --- DOM ELEMENTS ---
         const submitBtn = document.getElementById('submit-guess-btn');
@@ -655,7 +662,7 @@
 
        function setupEventListeners() {
     map.addListener('click', (e) => {
-        if (roundActive) {
+        if (gameState.roundActive) {
             uiSounds.pinDrop.triggerAttackRelease("G1", "1n");
             guessMarker.setPosition(e.latLng);
             guessMarker.setVisible(true);
@@ -970,7 +977,7 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         // --- GAME LOGIC ---
         function startNewRound() {
         document.getElementById('confirm-new-game-btn').classList.add('hidden'); // <-- AGGIUNGI QUESTA
-        roundActive = true;
+        gameState.roundActive = true;
         document.getElementById('loading-overlay').style.display = 'flex';
             roundActive = true;
             document.getElementById('loading-overlay').style.display = 'flex';
@@ -1154,11 +1161,11 @@ async function setupAndFinalizeRound(data, country, bounds) {
         visible: true,
     });
     document.getElementById('loading-overlay').style.display = 'none';
-    roundActive = true; // Riattiviamo il round per permettere di fare la guess
+    gameState.roundActive = true; // Riattiviamo il round per permettere di fare la guess
 }
         
         async function submitGuess() {
-            if (!guessMarker.getPosition() || !roundActive) return;
+            if (!guessMarker.getPosition() || !gameState.roundActive) return;
             
             roundActive = false;
             submitBtn.disabled = true;
