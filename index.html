@@ -297,6 +297,7 @@
                 <h3 class="text-lg font-semibold mb-3 text-gray-700">Game Mode</h3>
                 <div id="game-mode-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <button class="game-mode-btn" data-mode="World">World</button>
+                    <button class="game-mode-btn" data-mode="WeightedWorld">Mondo Ponderato</button>
                     <button class="game-mode-btn" data-mode="Europe">Europe</button>
                     <button class="game-mode-btn" data-mode="Asia">Asia</button>
                     <button class="game-mode-btn" data-mode="North America">N. America</button>
@@ -485,41 +486,103 @@
         // --- CONFIGURATION ---
         const GOOGLE_MAPS_API_KEY = "AIzaSyCpVIdowuqPNvmgb1pM6mFsE6ZbA4hdJQU";
         const STREET_VIEW_COUNTRIES = [
-            { name: "Albania", code: "AL", continent: "Europe" }, { name: "Andorra", code: "AD", continent: "Europe" }, { name: "Argentina", code: "AR", continent: "South America" },
-            { name: "Australia", code: "AU", continent: "Oceania" }, { name: "Austria", code: "AT", continent: "Europe" }, { name: "Bangladesh", code: "BD", continent: "Asia" },
-            { name: "Belgium", code: "BE", continent: "Europe" }, { name: "Bermuda", code: "BM", continent: "North America" }, { name: "Bhutan", code: "BT", continent: "Asia" },
-            { name: "Bolivia", code: "BO", continent: "South America" }, { name: "Botswana", code: "BW", continent: "Africa" }, { name: "Brazil", code: "BR", continent: "South America" },
-            { name: "Bulgaria", code: "BG", continent: "Europe" }, { name: "Cambodia", code: "KH", continent: "Asia" }, { name: "Canada", code: "CA", continent: "North America" },
-            { name: "Chile", code: "CL", continent: "South America" }, { name: "Colombia", code: "CO", continent: "South America" }, { name: "Croatia", code: "HR", continent: "Europe" },
-            { name: "Curacao", code: "CW", continent: "North America" }, { name: "Czech Republic", code: "CZ", continent: "Europe" }, { name: "Denmark", code: "DK", continent: "Europe" },
-            { name: "Dominican Republic", code: "DO", continent: "North America" }, { name: "Ecuador", code: "EC", continent: "South America" }, { name: "Estonia", code: "EE", continent: "Europe" },
-            { name: "Eswatini", code: "SZ", continent: "Africa" }, { name: "Faroe Islands", code: "FO", continent: "Europe" }, { name: "Finland", code: "FI", continent: "Europe" },
-            { name: "France", code: "FR", continent: "Europe" }, { name: "Germany", code: "DE", continent: "Europe" }, { name: "Ghana", code: "GH", continent: "Africa" },
-            { name: "Gibraltar", code: "GI", continent: "Europe" }, { name: "Greece", code: "GR", continent: "Europe" }, 
-            { name: "Guatemala", code: "GT", continent: "North America" }, { name: "Guam", code: "GU", continent: "Oceania" }, { name: "Hong Kong", code: "HK", continent: "Asia" },
-            { name: "Hungary", code: "HU", continent: "Europe" }, { name: "Iceland", code: "IS", continent: "Europe" }, { name: "India", code: "IN", continent: "Asia" },
-            { name: "Indonesia", code: "ID", continent: "Asia" }, { name: "Ireland", code: "IE", continent: "Europe" }, { name: "Isle of Man", code: "IM", continent: "Europe" },
-            { name: "Israel", code: "IL", continent: "Asia" }, { name: "Italy", code: "IT", continent: "Europe" }, { name: "Japan", code: "JP", continent: "Asia" },
-            { name: "Jordan", code: "JO", continent: "Asia" }, { name: "Kenya", code: "KE", continent: "Africa" }, { name: "Kyrgyzstan", code: "KG", continent: "Asia" },
-            { name: "Latvia", code: "LV", continent: "Europe" }, { name: "Lesotho", code: "LS", continent: "Africa" },
-            { name: "Lithuania", code: "LT", continent: "Europe" }, { name: "Luxembourg", code: "LU", continent: "Europe" }, { name: "Macau", code: "MO", continent: "Asia" },
-            { name: "Malaysia", code: "MY", continent: "Asia" }, { name: "Malta", code: "MT", continent: "Europe" },
-            { name: "Mexico", code: "MX", continent: "North America" }, { name: "Monaco", code: "MC", continent: "Europe" }, { name: "Mongolia", code: "MN", continent: "Asia" },
-            { name: "Montenegro", code: "ME", continent: "Europe" }, { name: "Netherlands", code: "NL", continent: "Europe" }, { name: "New Zealand", code: "NZ", continent: "Oceania" },
-            { name: "Nigeria", code: "NG", continent: "Africa" }, { name: "North Macedonia", code: "MK", continent: "Europe" }, { name: "Northern Mariana Islands", code: "MP", continent: "Oceania" },
-            { name: "Norway", code: "NO", continent: "Europe" }, { name: "Peru", code: "PE", continent: "South America" }, { name: "Philippines", code: "PH", continent: "Asia" },
-            { name: "Poland", code: "PL", continent: "Europe" }, { name: "Portugal", code: "PT", continent: "Europe" }, { name: "Puerto Rico", code: "PR", continent: "North America" },
-            { name: "Qatar", code: "QA", continent: "Asia" }, { name: "Reunion", code: "RE", continent: "Africa" }, { name: "Romania", code: "RO", continent: "Europe" },
-            { name: "Russia", code: "RU", continent: "Europe" }, { name: "San Marino", code: "SM", continent: "Europe" }, { name: "Senegal", code: "SN", continent: "Africa" },
-            { name: "Serbia", code: "RS", continent: "Europe" }, { name: "Singapore", code: "SG", continent: "Asia" }, { name: "Slovakia", code: "SK", continent: "Europe" },
-            { name: "Slovenia", code: "SI", continent: "Europe" }, { name: "South Africa", code: "ZA", continent: "Africa" }, { name: "South Korea", code: "KR", continent: "Asia" },
-            { name: "Spain", code: "ES", continent: "Europe" }, { name: "Sri Lanka", code: "LK", continent: "Asia" }, { name: "Sweden", code: "SE", continent: "Europe" },
-            { name: "Switzerland", code: "CH", continent: "Europe" }, { name: "Taiwan", code: "TW", continent: "Asia" }, { name: "Thailand", code: "TH", continent: "Asia" },
-            { name: "Tunisia", code: "TN", continent: "Africa" }, { name: "Turkey", code: "TR", continent: "Asia" }, { name: "Uganda", code: "UG", continent: "Africa" },
-            { name: "Ukraine", code: "UA", continent: "Europe" }, { name: "United Arab Emirates", code: "AE", continent: "Asia" }, { name: "United Kingdom", code: "GB", continent: "Europe" },
-            { name: "United States", code: "US", continent: "North America" }, { name: "Uruguay", code: "UY", continent: "South America" }, { name: "US Virgin Islands", code: "VI", continent: "North America" }
-        ];
-
+    { name: "Albania", code: "AL", continent: "Europe", area: 28748 },
+    { name: "Andorra", code: "AD", continent: "Europe", area: 468 },
+    { name: "Argentina", code: "AR", continent: "South America", area: 2780400 },
+    { name: "Australia", code: "AU", continent: "Oceania", area: 7692024 },
+    { name: "Austria", code: "AT", continent: "Europe", area: 83879 },
+    { name: "Bangladesh", code: "BD", continent: "Asia", area: 147570 },
+    { name: "Belgium", code: "BE", continent: "Europe", area: 30528 },
+    { name: "Bermuda", code: "BM", continent: "North America", area: 54 },
+    { name: "Bhutan", code: "BT", continent: "Asia", area: 38394 },
+    { name: "Bolivia", code: "BO", continent: "South America", area: 1098581 },
+    { name: "Botswana", code: "BW", continent: "Africa", area: 581730 },
+    { name: "Brazil", code: "BR", continent: "South America", area: 8515767 },
+    { name: "Bulgaria", code: "BG", continent: "Europe", area: 110994 },
+    { name: "Cambodia", code: "KH", continent: "Asia", area: 181035 },
+    { name: "Canada", code: "CA", continent: "North America", area: 9984670 },
+    { name: "Chile", code: "CL", continent: "South America", area: 756102 },
+    { name: "Colombia", code: "CO", continent: "South America", area: 1141748 },
+    { name: "Croatia", code: "HR", continent: "Europe", area: 56594 },
+    { name: "Curacao", code: "CW", continent: "North America", area: 444 },
+    { name: "Czech Republic", code: "CZ", continent: "Europe", area: 78867 },
+    { name: "Denmark", code: "DK", continent: "Europe", area: 43094 },
+    { name: "Dominican Republic", code: "DO", continent: "North America", area: 48671 },
+    { name: "Ecuador", code: "EC", continent: "South America", area: 283561 },
+    { name: "Estonia", code: "EE", continent: "Europe", area: 45227 },
+    { name: "Eswatini", code: "SZ", continent: "Africa", area: 17364 },
+    { name: "Faroe Islands", code: "FO", continent: "Europe", area: 1399 },
+    { name: "Finland", code: "FI", continent: "Europe", area: 338424 },
+    { name: "France", code: "FR", continent: "Europe", area: 551695 },
+    { name: "Germany", code: "DE", continent: "Europe", area: 357022 },
+    { name: "Ghana", code: "GH", continent: "Africa", area: 238535 },
+    { name: "Gibraltar", code: "GI", continent: "Europe", area: 6 },
+    { name: "Greece", code: "GR", continent: "Europe", area: 131957 },
+    { name: "Guatemala", code: "GT", continent: "North America", area: 108889 },
+    { name: "Guam", code: "GU", continent: "Oceania", area: 544 },
+    { name: "Hong Kong", code: "HK", continent: "Asia", area: 1104 },
+    { name: "Hungary", code: "HU", continent: "Europe", area: 93028 },
+    { name: "Iceland", code: "IS", continent: "Europe", area: 103000 },
+    { name: "India", code: "IN", continent: "Asia", area: 3287263 },
+    { name: "Indonesia", code: "ID", continent: "Asia", area: 1904569 },
+    { name: "Ireland", code: "IE", continent: "Europe", area: 70273 },
+    { name: "Isle of Man", code: "IM", continent: "Europe", area: 572 },
+    { name: "Israel", code: "IL", continent: "Asia", area: 20770 },
+    { name: "Italy", code: "IT", continent: "Europe", area: 301340 },
+    { name: "Japan", code: "JP", continent: "Asia", area: 377975 },
+    { name: "Jordan", code: "JO", continent: "Asia", area: 89342 },
+    { name: "Kenya", code: "KE", continent: "Africa", area: 580367 },
+    { name: "Kyrgyzstan", code: "KG", continent: "Asia", area: 199951 },
+    { name: "Latvia", code: "LV", continent: "Europe", area: 64589 },
+    { name: "Lesotho", code: "LS", continent: "Africa", area: 30355 },
+    { name: "Lithuania", code: "LT", continent: "Europe", area: 65300 },
+    { name: "Luxembourg", code: "LU", continent: "Europe", area: 2586 },
+    { name: "Macau", code: "MO", continent: "Asia", area: 30 },
+    { name: "Malaysia", code: "MY", continent: "Asia", area: 330803 },
+    { name: "Malta", code: "MT", continent: "Europe", area: 316 },
+    { name: "Mexico", code: "MX", continent: "North America", area: 1972550 },
+    { name: "Monaco", code: "MC", continent: "Europe", area: 2 },
+    { name: "Mongolia", code: "MN", continent: "Asia", area: 1564116 },
+    { name: "Montenegro", code: "ME", continent: "Europe", area: 13812 },
+    { name: "Netherlands", code: "NL", continent: "Europe", area: 41543 },
+    { name: "New Zealand", code: "NZ", continent: "Oceania", area: 268021 },
+    { name: "Nigeria", code: "NG", continent: "Africa", area: 923768 },
+    { name: "North Macedonia", code: "MK", continent: "Europe", area: 25713 },
+    { name: "Northern Mariana Islands", code: "MP", continent: "Oceania", area: 464 },
+    { name: "Norway", code: "NO", continent: "Europe", area: 385207 },
+    { name: "Peru", code: "PE", continent: "South America", area: 1285216 },
+    { name: "Philippines", code: "PH", continent: "Asia", area: 300000 },
+    { name: "Poland", code: "PL", continent: "Europe", area: 312696 },
+    { name: "Portugal", code: "PT", continent: "Europe", area: 92212 },
+    { name: "Puerto Rico", code: "PR", continent: "North America", area: 9104 },
+    { name: "Qatar", code: "QA", continent: "Asia", area: 11586 },
+    { name: "Reunion", code: "RE", continent: "Africa", area: 2511 },
+    { name: "Romania", code: "RO", continent: "Europe", area: 238397 },
+    { name: "Russia", code: "RU", continent: "Europe", area: 17098246 },
+    { name: "San Marino", code: "SM", continent: "Europe", area: 61 },
+    { name: "Senegal", code: "SN", continent: "Africa", area: 196722 },
+    { name: "Serbia", code: "RS", continent: "Europe", area: 88361 },
+    { name: "Singapore", code: "SG", continent: "Asia", area: 728 },
+    { name: "Slovakia", code: "SK", continent: "Europe", area: 49035 },
+    { name: "Slovenia", code: "SI", continent: "Europe", area: 20273 },
+    { name: "South Africa", code: "ZA", continent: "Africa", area: 1221037 },
+    { name: "South Korea", code: "KR", continent: "Asia", area: 100210 },
+    { name: "Spain", code: "ES", continent: "Europe", area: 505990 },
+    { name: "Sri Lanka", code: "LK", continent: "Asia", area: 65610 },
+    { name: "Sweden", code: "SE", continent: "Europe", area: 450295 },
+    { name: "Switzerland", code: "CH", continent: "Europe", area: 41285 },
+    { name: "Taiwan", code: "TW", continent: "Asia", area: 36197 },
+    { name: "Thailand", code: "TH", continent: "Asia", area: 513120 },
+    { name: "Tunisia", code: "TN", continent: "Africa", area: 163610 },
+    { name: "Turkey", code: "TR", continent: "Asia", area: 783562 },
+    { name: "Uganda", code: "UG", continent: "Africa", area: 241551 },
+    { name: "Ukraine", code: "UA", continent: "Europe", area: 603628 },
+    { name: "United Arab Emirates", code: "AE", continent: "Asia", area: 83600 },
+    { name: "United Kingdom", code: "GB", continent: "Europe", area: 243610 },
+    { name: "United States", code: "US", continent: "North America", area: 9833520 },
+    { name: "Uruguay", code: "UY", continent: "South America", area: 176215 },
+    { name: "US Virgin Islands", code: "VI", continent: "North America", area: 346 }
+];
         const countryNameMap = {
             "Türkiye": "Turkey"
         };
@@ -953,43 +1016,60 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
             }
         }
 
-    async function findRandomStreetViewLocation() {
-    // 1. SCEGLI UN PAESE A CASO DALLA NOSTRA LISTA GLOBALE
-    // Filtriamo prima i paesi in base alla modalità di gioco attiva!
+   async function findRandomStreetViewLocation() {
     let countriesToSearch;
-    if (activeGameMode === 'World') {
-        countriesToSearch = STREET_VIEW_COUNTRIES;
-    } else {
-        countriesToSearch = STREET_VIEW_COUNTRIES.filter(c => c.continent === activeGameMode);
-    }
+    let randomCountry;
 
-    if (!countriesToSearch || countriesToSearch.length === 0) {
-        alert("Nessun paese disponibile per la modalità di gioco selezionata!");
-        document.getElementById('loading-overlay').style.display = 'none';
-        return;
+    // --- INIZIO NUOVA LOGICA DI SELEZIONE ---
+    if (activeGameMode === 'World') {
+        // Selezione casuale uniforme (il vecchio metodo)
+        countriesToSearch = STREET_VIEW_COUNTRIES;
+        randomCountry = countriesToSearch[Math.floor(Math.random() * countriesToSearch.length)];
+    } else if (activeGameMode === 'WeightedWorld') {
+        // NUOVA MODALITA': Selezione ponderata per area
+        countriesToSearch = STREET_VIEW_COUNTRIES;
+        
+        // 1. Calcoliamo l'area totale di tutti i paesi
+        const totalArea = countriesToSearch.reduce((sum, country) => sum + country.area, 0);
+        
+        // 2. Generiamo un numero casuale all'interno di quest'area totale
+        let randomWeight = Math.random() * totalArea;
+        
+        // 3. Iteriamo finché non troviamo il paese corrispondente al nostro "peso" casuale
+        for (const country of countriesToSearch) {
+            randomWeight -= country.area;
+            if (randomWeight <= 0) {
+                randomCountry = country;
+                break;
+            }
+        }
+    } else {
+        // Selezione per continente (logica invariata)
+        countriesToSearch = STREET_VIEW_COUNTRIES.filter(c => c.continent === activeGameMode);
+        if (!countriesToSearch || countriesToSearch.length === 0) {
+            alert("Nessun paese disponibile per la modalità di gioco selezionata!");
+            return;
+        }
+        randomCountry = countriesToSearch[Math.floor(Math.random() * countriesToSearch.length)];
     }
-    
-    const randomCountry = countriesToSearch[Math.floor(Math.random() * countriesToSearch.length)];
+    // --- FINE NUOVA LOGICA DI SELEZIONE ---
+
     const countryCode = randomCountry.code;
     const countryName = randomCountry.name;
 
-    // 2. COSTRUISCI L'URL DINAMICO PER QUEL PAESE
-    // Assicurati che il nome del bucket qui sia quello corretto!
     const bucketBaseUrl = 'https://storage.googleapis.com/geo-detective-data-tuonome-123'; 
     const boundariesUrl = `${bucketBaseUrl}/${countryCode}.json`;
 
-    console.log(`Paese scelto: ${countryName}. Recupero confini da: ${boundariesUrl}`);
+    console.log(`Modalità: ${activeGameMode}. Paese scelto: ${countryName}. Recupero confini da: ${boundariesUrl}`);
     document.getElementById('loading-overlay').style.display = 'flex';
     
     try {
-        // 3. SCARICA IL FILE CORRETTO
         const response = await fetch(boundariesUrl);
         if (!response.ok) {
             throw new Error(`File non trovato per ${countryName} (${countryCode}.json).`);
         }
         const countryGeoJSON = await response.json();
         
-        // 4. CONTROLLI DI SICUREZZA SUI DATI
         if (!countryGeoJSON || !countryGeoJSON.features || countryGeoJSON.features.length === 0) {
             throw new Error(`Dati GeoJSON non validi o vuoti per ${countryName}.`);
         }
@@ -1003,7 +1083,6 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         }
         console.log("Confini caricati e validati. Inizio ricerca punto valido...");
 
-        // 5. TROVA UN PUNTO VALIDO ALL'INTERNO DEI CONFINI
         let randomLatLng;
         let pointFound = false;
         const bbox = turf.bbox(countryFeature.geometry);
@@ -1023,14 +1102,13 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         }
         console.log("Punto valido trovato all'interno dei confini!");
 
-        // 6. TROVA UNO STREET VIEW NELLE VICINANZE
         let panoramaFound = false;
         let panoramaAttempt = 0;
         while(!panoramaFound && panoramaAttempt < 5) {
              console.log(`Ricerca Street View per ${countryName}, tentativo ${panoramaAttempt + 1}...`);
              const { data } = await streetViewService.getPanorama({
                 location: randomLatLng,
-                radius: 50000 + (panoramaAttempt * 50000), // Aumentiamo il raggio ad ogni tentativo
+                radius: 50000 + (panoramaAttempt * 50000),
                 source: 'outdoor'
              });
 
@@ -1046,7 +1124,6 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         throw new Error(`Nessun panorama trovato vicino al punto generato per ${countryName}.`);
 
     } catch (error) {
-        // Se un qualsiasi errore si verifica, lo registriamo e riproviamo con un altro paese.
         console.error("ERRORE GESTITO:", error.message, "Riprovo con un nuovo paese.");
         startNewRound();
     }
