@@ -300,7 +300,6 @@
                     <button class="game-mode-btn" data-mode="World">World</button>
                     <button class="game-mode-btn" data-mode="WeightedWorld">Weighted World</button>
                     <button class="game-mode-btn" data-mode="Nemesis" title="Gioca solo nei tuoi 5 paesi peggiori!">Nemesis Training</button>
-                    <button class="game-mode-btn" data-mode="CountryStreak">Country Streak</button>
                     <button class="game-mode-btn" data-mode="Europe">Europe</button>
                     <button class="game-mode-btn" data-mode="Asia">Asia</button>
                     <button class="game-mode-btn" data-mode="North America">N. America</button>
@@ -359,7 +358,14 @@
                  </div>
                 <!-- Core Performance Dashboard -->
                 <div id="core-tab" class="stat-tab-content grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="stat-card md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="stat-card md:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="text-center p-4">
+                            <h3 class="text-lg font-medium text-gray-500">Longest Country Streak</h3>
+                            <p id="longest-streak-stat" class="mt-1 text-5xl font-semibold text-indigo-600">0</p>
+                            <p id="longest-streak-date" class="mt-2 text-sm text-gray-500"></p>
+                        </div>
+
+                        <div id="forte-list" class="p-4">
                         <div class="text-center p-4">
                             <h3 class="text-lg font-medium text-gray-500">Overall Country Accuracy</h3>
                             <p id="overall-accuracy" class="mt-1 text-5xl font-semibold text-indigo-600">0%</p>
@@ -616,6 +622,7 @@ let tempSelectedMode = 'World';
 let gameState = {
     roundActive: false,
     currentStreak: 0,
+    longestStreak: 0,
     distanceBudget: 15000, // Budget iniziale per la modalità Sfida a Distanza
     score: 0
 };
@@ -847,6 +854,11 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
         const savedMute = localStorage.getItem('geoMuteState');
         isMuted = savedMute === 'true';
         Tone.Destination.mute = isMuted;
+        
+         const savedLongestStreak = localStorage.getItem('geoLongestStreak');
+    if (savedLongestStreak) {
+        gameState.longestStreak = parseInt(savedLongestStreak, 10);
+    }
 
         // Aggiorna la UI all'avvio
         updateMuteButtonUI();
@@ -1002,33 +1014,20 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
         function startNewRound() {
     // --- INIZIO BLOCCO DI DIAGNOSI ---
     console.log("Avvio di startNewRound. Modalità attiva:", activeGameMode);
+    submitBtn.classList.remove('hidden'); 
      document.getElementById('fireworks-canvas').style.display = 'none';
     const streakCounter = document.getElementById('streak-counter');
     
     // Stampiamo nella console l'elemento che abbiamo trovato.
     console.log("Elemento #streak-counter trovato nel documento:", streakCounter);
     
-    if (activeGameMode === 'CountryStreak') {
-        // Verifichiamo se l'elemento esiste prima di provare a usarlo.
-        if (streakCounter) {
-            streakCounter.classList.remove('hidden');
-            const spanElement = streakCounter.querySelector('span');
-            
-            // Stampiamo anche l'elemento span che troviamo al suo interno.
-            console.log("Elemento <span> interno trovato:", spanElement);
-
-            // Verifichiamo se lo span esiste prima di provare a scriverci dentro.
-            if (spanElement) {
-                spanElement.textContent = gameState.currentStreak;
-            } else {
-                console.error("ERRORE GRAVE: L'elemento <span> non è stato trovato dentro #streak-counter!");
-            }
-        } else {
-            console.error("ERRORE GRAVE: L'elemento #streak-counter non è stato trovato nel DOM!");
-        }
-    } else {
-        if (streakCounter) {
-            streakCounter.classList.add('hidden');
+    // Questo è il nuovo blocco di codice
+    const streakCounter = document.getElementById('streak-counter');
+    if (streakCounter) {
+        streakCounter.classList.remove('hidden'); // Mostra sempre il contatore
+        const spanElement = streakCounter.querySelector('span');
+        if (spanElement) {
+            spanElement.textContent = gameState.currentStreak; // Aggiorna sempre il valore
         }
     }
     // --- FINE BLOCCO DI DIAGNOSI ---
@@ -1058,12 +1057,12 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
     findRandomStreetViewLocation();
 }
 
+// Sostituisci la vecchia funzione submitGuess con questa nuova versione
 async function submitGuess() {
     if (!guessMarker.getPosition() || !gameState.roundActive) return;
 
     gameState.roundActive = false;
     submitBtn.disabled = true;
-
     const guessedLocation = guessMarker.getPosition();
     let guessedCountry = { name: 'Unknown', code: 'N/A' };
     try {
@@ -1079,34 +1078,30 @@ async function submitGuess() {
 
     const distance = google.maps.geometry.spherical.computeDistanceBetween(actualLocation, guessedLocation);
     const isCountryCorrect = guessedCountry.code === actualCountryData.code;
-
     const proximityBonus = 2500 * Math.exp(-distance / 2000000);
     let score = isCountryCorrect ? 2500 + proximityBonus : proximityBonus * 0.8;
     score = Math.round(score);
-    gameState.score = score; // Aggiorniamo lo score nel gameState
+    gameState.score = score;
 
-    // --- Logica per COUNTRY STREAK ---
-    if (activeGameMode === 'CountryStreak') {
-        if (isCountryCorrect) {
-            gameState.currentStreak++;
-            showRoundResult(score, distance, isCountryCorrect, guessedCountry.name);
-            submitBtn.textContent = 'Next Round';
-            submitBtn.disabled = false;
-        } else {
-            showRoundResult(score, distance, isCountryCorrect, guessedCountry.name);
-            document.getElementById('final-streak').textContent = gameState.currentStreak;
-            document.getElementById('game-over-modal').classList.remove('hidden');
-            submitBtn.classList.add('hidden'); 
-        }
-    } else {
-        // Comportamento per tutte le altre modalità
-        showRoundResult(score, distance, isCountryCorrect, guessedCountry.name);
-        submitBtn.textContent = 'Next Round';
-        submitBtn.disabled = false;
+    // --- NUOVA LOGICA GLOBALE PER LA SERIE ---
+    if (isCountryCorrect) {
+        gameState.currentStreak++; // Aumenta la serie se la risposta è giusta
+         if (gameState.currentStreak > gameState.longestStreak) {
+        gameState.longestStreak = gameState.currentStreak;
+        localStorage.setItem('geoLongestStreak', gameState.longestStreak);
     }
+    } else {
+        gameState.currentStreak = 0; // Azzera la serie se la risposta è sbagliata
+    }
+    // La schermata "Game Over" non è più necessaria qui.
 
+    // Mostra il risultato del round e prepara il pulsante per il round successivo
+    showRoundResult(score, distance, isCountryCorrect, guessedCountry.name);
+    submitBtn.textContent = 'Next Round';
+    submitBtn.disabled = false;
+    
+    // Il resto della logica non cambia
     saveGameStats({ score, distance: distance / 1000, actualCountry: actualCountryData, guessedCountry, timestamp: new Date().toISOString() });
-
     if (isCountryCorrect && distance <= 5000) {
          triggerCelebration(true);
     } else if (isCountryCorrect && distance <= 200000) {
@@ -1408,7 +1403,7 @@ async function setupAndFinalizeRound(data, country, bounds) {
             Object.values(charts).forEach(chart => { if(chart) chart.destroy(); });
             
             if (activeTab === 'core') {
-                renderOverallAccuracy(stats);
+                renderCorePerformanceMetrics(stats);
                 renderPerCountryTable(stats, currentSort.column, currentSort.order);
                  // Modifica la chiamata a renderPerformanceMap in questo modo:
     const activeRegionBtn = document.querySelector('#map-region-controls .map-region-btn.active');
@@ -1427,13 +1422,25 @@ async function setupAndFinalizeRound(data, country, bounds) {
             }
         }
         
-        function renderOverallAccuracy(stats) {
-            const correct = stats.filter(s => normalizeCountryName(s.actualCountry.name) === normalizeCountryName(s.guessedCountry.name)).length;
-            const total = stats.length;
-            const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : 0;
-            document.getElementById('overall-accuracy').textContent = `${accuracy}%`;
-            document.getElementById('total-games').textContent = `Based on ${total} games played.`;
-        }
+        // Incolla questa nuova funzione al posto della vecchia renderOverallAccuracy
+function renderCorePerformanceMetrics(stats) {
+    // Logica per l'accuratezza (invariata)
+    const correct = stats.filter(s => normalizeCountryName(s.actualCountry.name) === normalizeCountryName(s.guessedCountry.name)).length;
+    const total = stats.length;
+    const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : 0;
+    document.getElementById('overall-accuracy').textContent = `${accuracy}%`;
+    document.getElementById('total-games').textContent = `Based on ${total} games played.`;
+
+    // NUOVA Logica per il record della serie
+    // Carichiamo il valore più recente dal gameState, che è stato caricato all'avvio
+    const longestStreak = gameState.longestStreak || 0; 
+    document.getElementById('longest-streak-stat').textContent = longestStreak;
+    if(longestStreak > 0){
+         document.getElementById('longest-streak-date').textContent = `Your personal best!`;
+    } else {
+         document.getElementById('longest-streak-date').textContent = `Keep playing to set a record!`;
+    }
+}
         
         function renderPerCountryTable(stats, sortBy = 'name', order = 'asc') {
              const countryData = stats.reduce((acc, game) => {
