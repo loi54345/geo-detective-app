@@ -915,10 +915,17 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
         
         
         function handleActionClick() {
+    // --- BLOCCO DI DIAGNOSI ---
+    console.log("Pulsante cliccato!");
+    console.log("Valore di gameState.roundActive al momento del click:", gameState.roundActive);
+    // --- FINE DIAGNOSI ---
+
     uiSounds.click.triggerAttackRelease("C6", "8n");
-    if (gameState.roundActive) { // <-- CORREZIONE: Usiamo la nuova variabile corretta
+    if (gameState.roundActive) {
+        console.log("Condizione IF è VERA. Chiamo submitGuess() di nuovo.");
         submitGuess();
     } else {
+        console.log("Condizione IF è FALSA. Chiamo startNewRound() come previsto.");
         startNewRound();
     }
 }
