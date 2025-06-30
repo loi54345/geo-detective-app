@@ -995,6 +995,7 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
         function startNewRound() {
     // --- INIZIO BLOCCO DI DIAGNOSI ---
     console.log("Avvio di startNewRound. Modalità attiva:", activeGameMode);
+     document.getElementById('fireworks-canvas').style.display = 'none';
     const streakCounter = document.getElementById('streak-counter');
     
     // Stampiamo nella console l'elemento che abbiamo trovato.
