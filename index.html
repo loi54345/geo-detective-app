@@ -1016,12 +1016,7 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
     console.log("Avvio di startNewRound. Modalità attiva:", activeGameMode);
     submitBtn.classList.remove('hidden'); 
      document.getElementById('fireworks-canvas').style.display = 'none';
-    const streakCounter = document.getElementById('streak-counter');
-    
-    // Stampiamo nella console l'elemento che abbiamo trovato.
-    console.log("Elemento #streak-counter trovato nel documento:", streakCounter);
-    
-    // Questo è il nuovo blocco di codice
+    // Questo è il blocco corretto con una sola dichiarazione
     const streakCounter = document.getElementById('streak-counter');
     if (streakCounter) {
         streakCounter.classList.remove('hidden'); // Mostra sempre il contatore
