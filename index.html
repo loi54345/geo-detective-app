@@ -1994,14 +1994,17 @@ async function setupAndFinalizeRound(data, country, bounds) {
             }, isSuper ? 8000 : 5000);
         }
 
-        // --- LOAD GOOGLE MAPS SCRIPT ---
-        (function() {
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMap&libraries=geometry`;
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-        })();
+       // --- LOAD GOOGLE MAPS SCRIPT (MODO SICURO) ---
+document.addEventListener('DOMContentLoaded', function() {
+    // Questo codice viene eseguito solo dopo che l'intera pagina HTML è pronta.
+    console.log("DOM completamente caricato. Avvio l'inizializzazione della mappa.");
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${Maps_API_KEY}&callback=initMap&libraries=geometry`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+});
         
     </script>
 </body>
