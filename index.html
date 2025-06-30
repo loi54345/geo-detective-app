@@ -1129,11 +1129,14 @@ async function submitGuess() {
    async function findRandomStreetViewLocation() {
     let randomCountry;
 
-    // --- INIZIO NUOVA LOGICA DI SELEZIONE ---
-    if (activeGameMode === 'World') {
+    // --- INIZIO LOGICA DI SELEZIONE CORRETTA ---
+    if (activeGameMode === 'World' || activeGameMode === 'CountryStreak' || activeGameMode === 'DistanceChallenge') {
+        // Per queste modalità, scegliamo un paese a caso da tutta la lista.
         const countriesToSearch = STREET_VIEW_COUNTRIES;
         randomCountry = countriesToSearch[Math.floor(Math.random() * countriesToSearch.length)];
-    } else if (activeGameMode === 'WeightedWorld') {
+    } 
+    else if (activeGameMode === 'WeightedWorld') {
+        // Modalità ponderata per area
         const countriesToSearch = STREET_VIEW_COUNTRIES;
         const totalArea = countriesToSearch.reduce((sum, country) => sum + (country.area || 0), 0);
         let randomWeight = Math.random() * totalArea;
@@ -1144,24 +1147,24 @@ async function submitGuess() {
                 break;
             }
         }
-    } else if (activeGameMode === 'Nemesis') {
-        // NUOVA MODALITA': Allenamento Nemesis
+    } 
+    else if (activeGameMode === 'Nemesis') {
+        // Modalità Allenamento Nemesis
         console.log("Modalità Nemesis attivata. Calcolo i paesi peggiori...");
         const nemesisCountries = getNemesisCountries();
 
         if (nemesisCountries.length === 0) {
             console.log("Nessun paese 'Nemesis' trovato (serve più storico). Avvio una partita 'World' normale.");
             alert("Non hai ancora abbastanza dati per la modalità Nemesis! Verrà avviato un round 'Mondo'. Gioca di più per sbloccarla!");
-            // Se non ci sono dati, giochiamo una partita "World" normale
             const countriesToSearch = STREET_VIEW_COUNTRIES;
             randomCountry = countriesToSearch[Math.floor(Math.random() * countriesToSearch.length)];
         } else {
             console.log("Paesi Nemesis trovati:", nemesisCountries.map(c => c.name));
-            // Scegliamo a caso uno dei paesi nemesis
             randomCountry = nemesisCountries[Math.floor(Math.random() * nemesisCountries.length)];
         }
-    } else {
-        // Selezione per continente
+    } 
+    else {
+        // Se non è nessuna delle precedenti, ALLORA è una selezione per continente
         const countriesToSearch = STREET_VIEW_COUNTRIES.filter(c => c.continent === activeGameMode);
         if (!countriesToSearch || countriesToSearch.length === 0) {
             alert("Nessun paese disponibile per la modalità di gioco selezionata!");
@@ -1169,9 +1172,9 @@ async function submitGuess() {
         }
         randomCountry = countriesToSearch[Math.floor(Math.random() * countriesToSearch.length)];
     }
-    // --- FINE NUOVA LOGICA DI SELEZIONE ---
+    // --- FINE LOGICA DI SELEZIONE ---
 
-    // Il resto della funzione rimane invariato
+    // Il resto della funzione rimane invariato...
     const countryCode = randomCountry.code;
     const countryName = randomCountry.name;
     const bucketBaseUrl = 'https://storage.googleapis.com/geo-detective-data-tuonome-123';
@@ -1179,14 +1182,14 @@ async function submitGuess() {
 
     console.log(`Modalità: ${activeGameMode}. Paese scelto: ${countryName}. Recupero confini da: ${boundariesUrl}`);
     document.getElementById('loading-overlay').style.display = 'flex';
-
+    
     try {
         const response = await fetch(boundariesUrl);
         if (!response.ok) throw new Error(`File non trovato per ${countryName} (${countryCode}.json).`);
-
+        
         const countryGeoJSON = await response.json();
         if (!countryGeoJSON || !countryGeoJSON.features || countryGeoJSON.features.length === 0) throw new Error(`Dati GeoJSON non validi o vuoti per ${countryName}.`);
-
+        
         const countryFeature = countryGeoJSON.features.find(f => f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'));
         if (!countryFeature) throw new Error(`Nessuna geometria di tipo Polygon o MultiPolygon trovata per ${countryName}.`);
 
@@ -1205,7 +1208,7 @@ async function submitGuess() {
         }
 
         if (!pointFound) throw new Error(`Impossibile trovare un punto valido nei confini di ${countryName} dopo ${findPointAttempts} tentativi.`);
-
+        
         console.log("Punto valido trovato all'interno dei confini!");
         let panoramaFound = false;
         let panoramaAttempt = 0;
