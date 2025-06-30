@@ -1323,7 +1323,7 @@ async function setupAndFinalizeRound(data, country, bounds) {
         async function submitGuess() {
             if (!guessMarker.getPosition() || !gameState.roundActive) return;
             
-            roundActive = false;
+            gameState.roundActive = false;
             submitBtn.disabled = true;
             mapContainer.classList.add('fullscreen');
             mapContainer.classList.remove('enlarged');
