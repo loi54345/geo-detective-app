@@ -915,13 +915,13 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
         
         
         function handleActionClick() {
-            uiSounds.click.triggerAttackRelease("C6", "8n");
-            if (roundActive) {
-                submitGuess();
-            } else {
-                startNewRound();
-            }
-        }
+    uiSounds.click.triggerAttackRelease("C6", "8n");
+    if (gameState.roundActive) { // <-- CORREZIONE: Usiamo la nuova variabile corretta
+        submitGuess();
+    } else {
+        startNewRound();
+    }
+}
         
         function setupAudio() {
             const reverb = new Tone.Reverb(1.5).toDestination();
