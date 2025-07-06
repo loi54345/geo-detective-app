@@ -692,7 +692,8 @@ let gameState = {
             startNewRound();
         }
 
-       function setupEventListeners() {
+       // Replace the entire setupEventListeners function with this corrected version
+function setupEventListeners() {
     map.addListener('click', (e) => {
         if (gameState.roundActive) {
             uiSounds.pinDrop.triggerAttackRelease("G1", "1n");
@@ -703,19 +704,19 @@ let gameState = {
     });
 
     submitBtn.addEventListener('click', handleActionClick);
+    
     mapTypeToggle.addEventListener('click', () => {
         uiSounds.click.triggerAttackRelease("C6", "8n");
         toggleMapType();
     });
 
-    // --- LOGICA PAGINA STATISTICHE (RI-AGGIUNTA) ---
+    // Stats Page Listeners
     document.getElementById('stats-btn').addEventListener('click', showStatsPage);
-    
     document.getElementById('close-stats-btn').addEventListener('click', () => {
          uiSounds.click.triggerAttackRelease("C6", "8n");
          document.getElementById('stats-page').style.display = 'none';
     });
-    
+
     document.querySelectorAll('.stat-tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             uiSounds.click.triggerAttackRelease("C6", "8n");
@@ -744,8 +745,8 @@ let gameState = {
             renderPerCountryTable(getGameStats(), sortBy, currentSort.order);
         });
     });
-    
-     document.getElementById('accuracy-time-toggle-container')?.addEventListener('click', (e) => {
+
+    document.getElementById('accuracy-time-toggle-container')?.addEventListener('click', (e) => {
          if (e.target.classList.contains('time-toggle-btn')) {
             uiSounds.click.triggerAttackRelease("C6", "8n");
             document.querySelectorAll('#accuracy-time-toggle-container .time-toggle-btn').forEach(btn => btn.classList.remove('active'));
@@ -753,6 +754,7 @@ let gameState = {
             renderAccuracyHistory(getGameStats());
          }
     });
+
     document.getElementById('distance-time-toggle-container')?.addEventListener('click', (e) => {
          if (e.target.classList.contains('time-toggle-btn')) {
             uiSounds.click.triggerAttackRelease("C6", "8n");
@@ -762,9 +764,8 @@ let gameState = {
          }
     });
 
-    // --- LOGICA FINESTRA IMPOSTAZIONI ---
+    // Settings Modal Listeners
     const confirmBtn = document.getElementById('confirm-new-game-btn');
-
     settingsBtn.addEventListener('click', () => {
         uiSounds.click.triggerAttackRelease("C6", "8n");
         tempSelectedMode = activeGameMode; 
@@ -785,20 +786,18 @@ let gameState = {
             if (tempSelectedMode !== activeGameMode) {
                 confirmBtn.classList.remove('hidden');
             } else {
-                confirmBtn.classList.add('hidden');
+                 confirmBtn.classList.add('hidden');
             }
             uiSounds.click.triggerAttackRelease("E5", "8n");
         });
     });
 
-    // Replace the existing confirmBtn listener with this
     confirmBtn.addEventListener('click', () => {
         activeGameMode = tempSelectedMode;
         localStorage.setItem('geoGameMode', activeGameMode);
         settingsModal.classList.add('hidden');
         uiSounds.click.triggerAttackRelease("G5", "8n");
 
-        // RESET logic for the new mode
         if (activeGameMode === 'DistanceChallenge') {
             gameState.distanceBudget = 15000;
             gameState.roundsCompleted = 0;
@@ -814,41 +813,32 @@ let gameState = {
         updateMuteButtonUI();
         if (!isMuted) {
            uiSounds.click.triggerAttackRelease("C6", "8n");
-        
         }
     });
-    // Aggiungi questo nuovo listener per i pulsanti della regione della mappa
-document.getElementById('map-region-controls')?.addEventListener('click', (e) => {
-     if (e.target.classList.contains('map-region-btn')) {
-        uiSounds.click.triggerAttackRelease("C6", "8n");
 
-        // Rimuovi la classe 'active' da tutti i pulsanti di regione
-        document.querySelectorAll('#map-region-controls .map-region-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('map-region-controls')?.addEventListener('click', (e) => {
+         if (e.target.classList.contains('map-region-btn')) {
+            uiSounds.click.triggerAttackRelease("C6", "8n");
+            document.querySelectorAll('#map-region-controls .map-region-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            const newRegion = e.target.dataset.region;
+            renderPerformanceMap(getGameStats(), newRegion);
+         }
+    });
 
-        // Aggiungi la classe 'active' al pulsante cliccato
-        e.target.classList.add('active');
+    // Game Over Modal Button Listeners
+    document.getElementById('play-again-streak-btn').addEventListener('click', () => {
+        document.getElementById('game-over-modal').classList.add('hidden');
+        gameState.currentStreak = 0;
+        startNewRound();
+    });
 
-        // Ottieni la regione dal data-attribute del pulsante
-        const newRegion = e.target.dataset.region;
-
-        // Ridisegna la mappa con la nuova regione
-        renderPerformanceMap(getGameStats(), newRegion);
-     }
-     // Add this to the end of the setupEventListeners function
     document.getElementById('play-again-distance-btn').addEventListener('click', () => {
         document.getElementById('distance-game-over-modal').classList.add('hidden');
-        // Reset the state and start a new game
         gameState.distanceBudget = 15000;
         gameState.roundsCompleted = 0;
         startNewRound();
     });
-});
-// Aggiungi alla fine della funzione setupEventListeners
-document.getElementById('play-again-streak-btn').addEventListener('click', () => {
-    document.getElementById('game-over-modal').classList.add('hidden');
-    gameState.currentStreak = 0; // Azzera la serie
-    startNewRound();
-});
 }
     
     function updateGameModeButtonsUI() {
@@ -1086,33 +1076,7 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
 
         findRandomStreetViewLocation();
     }
-    // --- FINE BLOCCO DI DIAGNOSI ---
-
-    // Il resto della funzione rimane invariato
-    document.getElementById('confirm-new-game-btn').classList.add('hidden');
-    document.getElementById('loading-overlay').style.display = 'flex';
-    document.getElementById('result-overlay').style.display = 'none';
-    mapContainer.classList.remove('fullscreen', 'enlarged');
     
-    submitBtn.textContent = 'Submit Guess';
-    submitBtn.disabled = true;
-
-    map.setCenter({ lat: 20, lng: 0 });
-    map.setZoom(2);
-
-    if (guessMarker) guessMarker.setVisible(false);
-    if (actualMarker) actualMarker.setVisible(false);
-    if (guessLine) guessLine.setMap(null);
-    
-    panorama.setOptions({ 
-        linksControl: true, panControl: true, visible: false, 
-        pov: {heading: Math.random() * 360, pitch: 0}, 
-        zoom: 0 
-    });
-
-    findRandomStreetViewLocation();
-}
-
 // Sostituisci la vecchia funzione submitGuess con questa nuova versione
 // Replace the existing submitGuess function with this
     async function submitGuess() {
