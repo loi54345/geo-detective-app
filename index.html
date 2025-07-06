@@ -279,7 +279,8 @@
 </button>
 
     <div id="game-controls">
-       <div id="streak-counter" class="ui-btn hidden" style="cursor: default;">Serie: <span class="ml-2 font-bold">0</span></div>
+       <div id="streak-counter" class="ui-btn hidden" style="cursor: default;">Streak: <span class="ml-2 font-bold">0</span></div>
+       <div id="distance-budget-counter" class="ui-btn hidden" style="cursor: default;">Budget: <span class="ml-2 font-bold">15000</span> km</div>
         <button id="stats-btn" class="ui-btn">Statistics</button>
     </div>
    <div id="settings-modal" class="modal-backdrop z-[120] hidden">
@@ -299,7 +300,8 @@
                 <div id="game-mode-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <button class="game-mode-btn" data-mode="World">World</button>
                     <button class="game-mode-btn" data-mode="WeightedWorld">Weighted World</button>
-                    <button class="game-mode-btn" data-mode="Nemesis" title="Gioca solo nei tuoi 5 paesi peggiori!">Nemesis Training</button>
+                    <button class="game-mode-btn" data-mode="DistanceChallenge" title="Complete as many rounds as you can before your 15,000km budget runs out!">Distance Challenge</button>
+                    <button class="game-mode-btn" data-mode="Nemesis" title="Play only in your 5 worst performing countries!">Nemesis Training</button>
                     <button class="game-mode-btn" data-mode="Europe">Europe</button>
                     <button class="game-mode-btn" data-mode="Asia">Asia</button>
                     <button class="game-mode-btn" data-mode="North America">N. America</button>
@@ -491,13 +493,23 @@
         </div>
      </div>
      <div id="game-over-modal" class="modal-backdrop hidden z-[130]">
-    <div class="modal-content">
-        <h2 class="text-3xl font-bold mb-2">Game Over!</h2>
-        <p class="text-lg mb-4">La tua serie si è interrotta.</p>
-        <p class="text-xl mb-6">Punteggio Finale: <strong id="final-streak" class="text-4xl text-indigo-600">0</strong></p>
-        <button id="play-again-streak-btn" class="ui-btn !bg-indigo-600 hover:!bg-indigo-700">Gioca Ancora</button>
+    <div id="game-over-modal" class="modal-backdrop hidden z-[130]">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-2">Game Over!</h2>
+            <p class="text-lg mb-4">Your streak has been broken.</p>
+            <p class="text-xl mb-6">Final Streak: <strong id="final-streak" class="text-4xl text-indigo-600">0</strong></p>
+            <button id="play-again-streak-btn" class="ui-btn !bg-indigo-600 hover:!bg-indigo-700">Play Again</button>
+        </div>
     </div>
-</div>
+
+    <div id="distance-game-over-modal" class="modal-backdrop hidden z-[130]">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-2">Budget Depleted!</h2>
+            <p class="text-lg mb-4">You've run out of kilometers.</p>
+            <p class="text-xl mb-6">Rounds Completed: <strong id="final-rounds-completed" class="text-4xl text-indigo-600">0</strong></p>
+            <button id="play-again-distance-btn" class="ui-btn !bg-indigo-600 hover:!bg-indigo-700">Play Again</button>
+        </div>
+    </div>
 
     <script>
       
@@ -625,6 +637,7 @@ let gameState = {
     currentStreak: 0,
     longestStreak: 0,
     distanceBudget: 15000, // Budget iniziale per la modalità Sfida a Distanza
+    roundsCompleted: 0,
     score: 0
 };
 
@@ -778,11 +791,19 @@ let gameState = {
         });
     });
 
+    // Replace the existing confirmBtn listener with this
     confirmBtn.addEventListener('click', () => {
         activeGameMode = tempSelectedMode;
         localStorage.setItem('geoGameMode', activeGameMode);
         settingsModal.classList.add('hidden');
         uiSounds.click.triggerAttackRelease("G5", "8n");
+
+        // RESET logic for the new mode
+        if (activeGameMode === 'DistanceChallenge') {
+            gameState.distanceBudget = 15000;
+            gameState.roundsCompleted = 0;
+        }
+
         startNewRound();
     });
 
@@ -813,6 +834,14 @@ document.getElementById('map-region-controls')?.addEventListener('click', (e) =>
         // Ridisegna la mappa con la nuova regione
         renderPerformanceMap(getGameStats(), newRegion);
      }
+     // Add this to the end of the setupEventListeners function
+    document.getElementById('play-again-distance-btn').addEventListener('click', () => {
+        document.getElementById('distance-game-over-modal').classList.add('hidden');
+        // Reset the state and start a new game
+        gameState.distanceBudget = 15000;
+        gameState.roundsCompleted = 0;
+        startNewRound();
+    });
 });
 // Aggiungi alla fine della funzione setupEventListeners
 document.getElementById('play-again-streak-btn').addEventListener('click', () => {
@@ -1012,19 +1041,50 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
         }
 
         // --- GAME LOGIC ---
-        function startNewRound() {
-    // --- INIZIO BLOCCO DI DIAGNOSI ---
-    console.log("Avvio di startNewRound. Modalità attiva:", activeGameMode);
-    submitBtn.classList.remove('hidden'); 
-     document.getElementById('fireworks-canvas').style.display = 'none';
-    // Questo è il blocco corretto con una sola dichiarazione
-    const streakCounter = document.getElementById('streak-counter');
-    if (streakCounter) {
-        streakCounter.classList.remove('hidden'); // Mostra sempre il contatore
-        const spanElement = streakCounter.querySelector('span');
-        if (spanElement) {
-            spanElement.textContent = gameState.currentStreak; // Aggiorna sempre il valore
+        // Replace the existing startNewRound function with this
+    function startNewRound() {
+        submitBtn.classList.remove('hidden');
+        document.getElementById('fireworks-canvas').style.display = 'none';
+
+        // --- UI Management for Different Modes ---
+        const streakCounter = document.getElementById('streak-counter');
+        const budgetCounter = document.getElementById('distance-budget-counter');
+        
+        // Always show and update the streak counter
+        streakCounter.classList.remove('hidden');
+        streakCounter.querySelector('span').textContent = gameState.currentStreak;
+
+        // Logic for Distance Challenge
+        if (activeGameMode === 'DistanceChallenge') {
+            gameState.roundsCompleted++; // Increment round counter
+            budgetCounter.classList.remove('hidden');
+            budgetCounter.querySelector('span').textContent = `${Math.round(gameState.distanceBudget)} km`;
+        } else {
+            budgetCounter.classList.add('hidden'); // Hide if not in this mode
         }
+
+        // --- Rest of the function (Resetting the UI) ---
+        document.getElementById('confirm-new-game-btn').classList.add('hidden');
+        document.getElementById('loading-overlay').style.display = 'flex';
+        document.getElementById('result-overlay').style.display = 'none';
+        mapContainer.classList.remove('fullscreen', 'enlarged');
+        
+        submitBtn.textContent = 'Submit Guess';
+        submitBtn.disabled = true;
+        map.setCenter({ lat: 20, lng: 0 });
+        map.setZoom(2);
+
+        if (guessMarker) guessMarker.setVisible(false);
+        if (actualMarker) actualMarker.setVisible(false);
+        if (guessLine) guessLine.setMap(null);
+        
+        panorama.setOptions({ 
+            linksControl: true, panControl: true, visible: false, 
+            pov: {heading: Math.random() * 360, pitch: 0}, 
+            zoom: 0 
+        });
+
+        findRandomStreetViewLocation();
     }
     // --- FINE BLOCCO DI DIAGNOSI ---
 
@@ -1054,56 +1114,72 @@ document.getElementById('play-again-streak-btn').addEventListener('click', () =>
 }
 
 // Sostituisci la vecchia funzione submitGuess con questa nuova versione
-async function submitGuess() {
-    if (!guessMarker.getPosition() || !gameState.roundActive) return;
+// Replace the existing submitGuess function with this
+    async function submitGuess() {
+        if (!guessMarker.getPosition() || !gameState.roundActive) return;
 
-    gameState.roundActive = false;
-    submitBtn.disabled = true;
-    const guessedLocation = guessMarker.getPosition();
-    let guessedCountry = { name: 'Unknown', code: 'N/A' };
-    try {
-        const { results } = await geocoder.geocode({ location: guessedLocation });
-        const address = results.find(r => r.types.includes('country'));
-        if (address) {
-            const countryComponent = address.address_components.find(c => c.types.includes('country'));
-            if (countryComponent) {
-                guessedCountry = { name: normalizeCountryName(countryComponent.long_name), code: countryComponent.short_name };
+        gameState.roundActive = false;
+        submitBtn.disabled = true;
+        const guessedLocation = guessMarker.getPosition();
+        let guessedCountry = { name: 'Unknown', code: 'N/A' };
+        try {
+            const { results } = await geocoder.geocode({ location: guessedLocation });
+            const address = results.find(r => r.types.includes('country'));
+            if (address) {
+                const countryComponent = address.address_components.find(c => c.types.includes('country'));
+                if (countryComponent) {
+                    guessedCountry = { name: normalizeCountryName(countryComponent.long_name), code: countryComponent.short_name };
+                }
+            }
+        } catch (e) { console.error("Geocoding guess failed", e); }
+
+        const distance = google.maps.geometry.spherical.computeDistanceBetween(actualLocation, guessedLocation);
+        const isCountryCorrect = guessedCountry.code === actualCountryData.code;
+        const proximityBonus = 2500 * Math.exp(-distance / 2000000);
+        let score = isCountryCorrect ? 2500 + proximityBonus : proximityBonus * 0.8;
+        score = Math.round(score);
+        gameState.score = score;
+
+        // Universal Streak Logic (active in all modes)
+        if (isCountryCorrect) {
+            gameState.currentStreak++;
+            if (gameState.currentStreak > gameState.longestStreak) {
+                gameState.longestStreak = gameState.currentStreak;
+                localStorage.setItem('geoLongestStreak', gameState.longestStreak);
+            }
+        } else {
+            gameState.currentStreak = 0;
+        }
+
+        // Save stats for every round
+        saveGameStats({ score, distance: distance / 1000, actualCountry: actualCountryData, guessedCountry, timestamp: new Date().toISOString() });
+        
+        // --- DISTANCE CHALLENGE - SPECIFIC LOGIC ---
+        if (activeGameMode === 'DistanceChallenge') {
+            gameState.distanceBudget -= (distance / 1000); // Subtract distance in km
+
+            if (gameState.distanceBudget <= 0) {
+                // GAME OVER
+                gameState.distanceBudget = 0; // Prevent negative display
+                showRoundResult(score, distance, isCountryCorrect, guessedCountry.name); // Show final round result
+                document.getElementById('final-rounds-completed').textContent = gameState.roundsCompleted;
+                document.getElementById('distance-game-over-modal').classList.remove('hidden');
+                submitBtn.classList.add('hidden'); // Hide "Next Round" button
+                return; // Stop the function here to end the game
             }
         }
-    } catch (e) { console.error("Geocoding guess failed", e); }
 
-    const distance = google.maps.geometry.spherical.computeDistanceBetween(actualLocation, guessedLocation);
-    const isCountryCorrect = guessedCountry.code === actualCountryData.code;
-    const proximityBonus = 2500 * Math.exp(-distance / 2000000);
-    let score = isCountryCorrect ? 2500 + proximityBonus : proximityBonus * 0.8;
-    score = Math.round(score);
-    gameState.score = score;
-
-    // --- NUOVA LOGICA GLOBALE PER LA SERIE ---
-    if (isCountryCorrect) {
-        gameState.currentStreak++; // Aumenta la serie se la risposta è giusta
-         if (gameState.currentStreak > gameState.longestStreak) {
-        gameState.longestStreak = gameState.currentStreak;
-        localStorage.setItem('geoLongestStreak', gameState.longestStreak);
+        // If not game over, show round result and prepare for the next round
+        showRoundResult(score, distance, isCountryCorrect, guessedCountry.name);
+        submitBtn.textContent = 'Next Round';
+        submitBtn.disabled = false;
+        
+        if (isCountryCorrect && distance <= 5000) {
+            triggerCelebration(true);
+        } else if (isCountryCorrect && distance <= 200000) {
+            triggerCelebration(false);
+        }
     }
-    } else {
-        gameState.currentStreak = 0; // Azzera la serie se la risposta è sbagliata
-    }
-    // La schermata "Game Over" non è più necessaria qui.
-
-    // Mostra il risultato del round e prepara il pulsante per il round successivo
-    showRoundResult(score, distance, isCountryCorrect, guessedCountry.name);
-    submitBtn.textContent = 'Next Round';
-    submitBtn.disabled = false;
-    
-    // Il resto della logica non cambia
-    saveGameStats({ score, distance: distance / 1000, actualCountry: actualCountryData, guessedCountry, timestamp: new Date().toISOString() });
-    if (isCountryCorrect && distance <= 5000) {
-         triggerCelebration(true);
-    } else if (isCountryCorrect && distance <= 200000) {
-         triggerCelebration(false);
-    }
-}
 
         function normalizeCountryName(name) {
             return countryNameMap[name] || name;
@@ -1154,7 +1230,7 @@ async function submitGuess() {
 
         if (nemesisCountries.length === 0) {
             console.log("Nessun paese 'Nemesis' trovato (serve più storico). Avvio una partita 'World' normale.");
-            alert("Non hai ancora abbastanza dati per la modalità Nemesis! Verrà avviato un round 'Mondo'. Gioca di più per sbloccarla!");
+            alert("You don't have enough data for Nemesis mode yet! A 'World' round will be started. Play more to unlock it!");
             const countriesToSearch = STREET_VIEW_COUNTRIES;
             randomCountry = countriesToSearch[Math.floor(Math.random() * countriesToSearch.length)];
         } else {
